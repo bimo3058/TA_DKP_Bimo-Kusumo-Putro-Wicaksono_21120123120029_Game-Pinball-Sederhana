@@ -20,8 +20,11 @@ wallpaper = pygame.image.load("wallpaperbetter.com_1280x768.jpg")
 
 # Warna
 WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
+DARKRED = (139, 0, 0)
+DARKBLUE = (0, 0, 128)
+GRAY = (150, 150, 150)
+LIGHTGRAY= (160,160,160)
+DARKGRAY = (102, 102, 102)
 
 # Frame rate
 clock = pygame.time.Clock()
@@ -34,7 +37,8 @@ class Ball:
         self.y = SCREEN_HEIGHT // 2
         self.dx = random.choice([-9, 9])  # Kecepatan horizontal awal
         self.dy = random.choice([-9, -8, -7, -6])  # Kecepatan vertikal awal
-        self.color = RED
+        self.color = GRAY
+        self.collision_color_change_delay = 0
     
     def move(self):
         self.x += self.dx
@@ -53,12 +57,12 @@ class Ball:
 
 class Paddle:
     def __init__(self):
-        self.width = 100
+        self.width = 170
         self.height = 10
         self.x = SCREEN_WIDTH // 2 - self.width // 2
         self.y = SCREEN_HEIGHT - 30
         self.dx = 0
-        self.color = BLUE
+        self.color = LIGHTGRAY
     
     def move(self, keys):
         if keys[pygame.K_LEFT]:
@@ -79,7 +83,7 @@ class Paddle:
         pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
 
 class Block:
-    def __init__(self, x, y, radius=15, color=WHITE, outline_color=WHITE, outline_width=1):
+    def __init__(self, x, y, radius=15, color=DARKRED, outline_color=WHITE, outline_width=2):
         self.x = x
         self.y = y
         self.radius = radius
@@ -101,7 +105,8 @@ class Block:
             if distance <= self.radius + ball.radius:
                 self.destroyed = True
                 ball.dy *= -1
-                ball.color = RED  # Ganti warna bola saat mengenai blok
+                ball.color = DARKRED  # Ganti warna bola saat mengenai blok
+                ball.collision_color_change_delay = 5 
                 return True
         return False
 
@@ -113,23 +118,26 @@ def create_blocks(rows, cols):
             x = (col * 2 + 1) * ((SCREEN_WIDTH - 2*block_radius) // (cols * 2)) + block_radius
             y = (row * 2 + 1) * ((SCREEN_HEIGHT // 4 - 2*block_radius) // (rows * 2)) + block_radius
             blocks.append(Block(x, y, block_radius))
-    return blocks
+    return blocks     
 
 def game_over_screen():
-    font = pygame.font.Font(None, 74)
+    font = pygame.font.Font("bahnschrift.ttf", 74)
     text = font.render("GAME OVER", True, WHITE)
-    screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - text.get_height() // 2 - 100))
 
-    button_font = pygame.font.Font(None, 36)
+    button_font = pygame.font.Font("bahnschrift.ttf", 22)
     restart_text = button_font.render("Lanjut", True, WHITE)
     quit_text = button_font.render("Keluar", True, WHITE)
 
     restart_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2, 200, 50)
     quit_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 60, 200, 50)
 
-    pygame.draw.rect(screen, BLUE, restart_button)
-    pygame.draw.rect(screen, BLUE, quit_button)
+    # Menggambar kotak UI
+    ui_box = pygame.Rect(SCREEN_WIDTH // 2 - 280, SCREEN_HEIGHT // 2 - 180, 570, 330)
+    pygame.draw.rect(screen, DARKGRAY, ui_box)
+    pygame.draw.rect(screen, DARKBLUE, restart_button)
+    pygame.draw.rect(screen, DARKRED, quit_button)
 
+    screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - text.get_height() // 2 - 100))
     screen.blit(restart_text, (SCREEN_WIDTH // 2 - restart_text.get_width() // 2, SCREEN_HEIGHT // 2 + 10))
     screen.blit(quit_text, (SCREEN_WIDTH // 2 - quit_text.get_width() // 2, SCREEN_HEIGHT // 2 + 70))
 
@@ -156,7 +164,7 @@ def main():
     destroyed_blocks = 0  # Jumlah blok yang dihancurkan
 
     # Font untuk teks skor
-    font = pygame.font.Font(None, 36)
+    font = pygame.font.Font("bahnschrift.ttf", 22)
 
     while running:
         for event in pygame.event.get():
@@ -165,32 +173,30 @@ def main():
         
         # Mendapatkan input tombol saat ini
         keys = pygame.key.get_pressed()
-
         ball.move()
         paddle.move(keys)
 
-        # Deteksi tabrakan antara bola dan paddle
+        # Deteksi benturan antara bola dan paddle
         if ball.y + ball.radius >= paddle.y and paddle.x - ball.radius <= ball.x <= paddle.x + paddle.width + ball.radius:
             ball.dy *= -1
-            # Memantulkan bola ke sudut sesuai dengan posisi bola saat bersentuhan dengan paddle
             ball.dx = 10 * ((ball.x - (paddle.x + paddle.width // 2)) / paddle.width)
 
         # Deteksi tabrakan antara bola dan blok
         for block in blocks:
             if block.check_collision(ball):
-                score += 10  # Tambahkan 10 poin setiap kali bola menghancurkan blok
-                destroyed_blocks += 1  # Tambahkan jumlah blok yang dihancurkan
-                if destroyed_blocks % 5 == 0:  # Setiap 5 blok yang dihancurkan
-                    # Batasi peningkatan kecepatan bola hanya jika belum mencapai kecepatan maksimum
+                score += 10  
+                destroyed_blocks += 1 
+                if destroyed_blocks % 5 == 0:  
+                    # Batasi peningkatan kecepatan bola
                     if math.sqrt(ball.dx ** 2 + ball.dy ** 2) < 4:
-                        ball.dx *= 1.1  # Tingkatkan kecepatan bola (dengan faktor yang lebih kecil)
+                        ball.dx *= 1.1  
                         ball.dy *= 1.1
-                        # Batasi kecepatan maksimum bola menjadi 4
+                        # Batas kecepatan maksimum bola
                         speed_limit = 4
                         if math.sqrt(ball.dx ** 2 + ball.dy ** 2) > speed_limit:
                             ball.dx *= speed_limit / math.sqrt(ball.dx ** 2 + ball.dy ** 2)
                             ball.dy *= speed_limit / math.sqrt(ball.dy ** 2 + ball.dy ** 2)
-                break  # Hanya satu tabrakan per frame
+                break
 
         # Menggambar objek
         screen.blit(wallpaper, (0, 0))
@@ -203,6 +209,10 @@ def main():
         score_text = font.render("Score: " + str(score), True, WHITE)
         screen.blit(score_text, (10, SCREEN_HEIGHT - 40))
 
+        if ball.collision_color_change_delay > 0:
+            ball.collision_color_change_delay -= 1
+            if ball.collision_color_change_delay == 0:
+                ball.color = GRAY
         pygame.display.flip()
 
         # Periksa apakah semua blok hancur
