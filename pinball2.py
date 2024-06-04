@@ -120,6 +120,43 @@ def create_blocks(rows, cols):
             blocks.append(Block(x, y, block_radius))
     return blocks     
 
+def main_menu_screen():
+    wallpaper = pygame.image.load("wallpaperbetter.com_1280x768.jpg")
+    font = pygame.font.Font("bahnschrift.ttf", 50)
+    text = font.render("PINBALL COBA COBA", True, WHITE)
+
+    button_font = pygame.font.Font("bahnschrift.ttf", 22)
+    restart_text = button_font.render("Mulai", True, WHITE)
+    quit_text = button_font.render("Keluar", True, WHITE)
+
+    start_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2, 200, 50)
+    quit_button = pygame.Rect(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 60, 200, 50)
+    screen.blit(wallpaper, (0, 0))
+    
+    # Menggambar kotak UI
+    ui_box = pygame.Rect(SCREEN_WIDTH // 2 - 280, SCREEN_HEIGHT // 2 - 180, 570, 330)
+    pygame.draw.rect(screen, DARKGRAY, ui_box)
+    pygame.draw.rect(screen, DARKBLUE, start_button)
+    pygame.draw.rect(screen, DARKRED, quit_button)
+
+    screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - text.get_height() // 2 - 100))
+    screen.blit(restart_text, (SCREEN_WIDTH // 2 - restart_text.get_width() // 2, SCREEN_HEIGHT // 2 + 10))
+    screen.blit(quit_text, (SCREEN_WIDTH // 2 - quit_text.get_width() // 2, SCREEN_HEIGHT // 2 + 70))
+
+    pygame.display.flip()
+    
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if start_button.collidepoint(event.pos):
+                    main()
+                elif quit_button.collidepoint(event.pos):
+                    pygame.quit()
+                    sys.exit()
+    
 def game_over_screen():
     font = pygame.font.Font("bahnschrift.ttf", 74)
     text = font.render("GAME OVER", True, WHITE)
@@ -222,7 +259,9 @@ def main():
         
         clock.tick(FPS)
 
+    main_menu_screen()
     game_over_screen()
 
 if __name__ == "__main__":
+    main_menu_screen()
     main()
